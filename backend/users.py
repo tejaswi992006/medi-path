@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-
 from database import SessionLocal
 from models import User
 from pydantic import BaseModel
-
+import hashlib
 
 router = APIRouter(prefix="/users", tags=["Users"])
-
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def get_db():
     db = SessionLocal()
@@ -20,7 +20,7 @@ def get_db():
 class UserCreate(BaseModel):
     name: str
     email: str
-    password_hash: str
+    password: str
     role_id: int
     facility_id: int | None = None
 
@@ -42,7 +42,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     new_user = User(
         name=user.name,
         email=user.email,
-        password_hash=user.password_hash,
+        password_hash=hash_password(user.password),
         role_id=user.role_id,
         facility_id=user.facility_id
     )
