@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import Appointment, Patient, User, Facility
 from schemas import AppointmentCreate, AppointmentResponse
-
+from auth import get_current_user
+from models import User
 
 router = APIRouter(
     prefix="/appointments",
@@ -23,7 +24,8 @@ def get_db():
 @router.post("/", response_model=AppointmentResponse)
 def create_appointment(
     appointment: AppointmentCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
 
     # Check whether patient exists
@@ -78,6 +80,7 @@ def create_appointment(
 
 @router.get("/", response_model=list[AppointmentResponse])
 def get_appointments(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     return db.query(Appointment).all()

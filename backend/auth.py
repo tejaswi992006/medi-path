@@ -120,7 +120,7 @@ def get_current_user(
 ):
     token = credentials.credentials
 
-    print("TOKEN RECEIVED:", token)
+    
 
     try:
         payload = jwt.decode(
@@ -129,7 +129,7 @@ def get_current_user(
             algorithms=[ALGORITHM]
         )
 
-        print("TOKEN PAYLOAD:", payload)
+        
 
         user_id = payload.get("user_id")
 
@@ -142,14 +142,11 @@ def get_current_user(
     except HTTPException:
         raise
 
-    except Exception as e:
-        print("JWT ERROR:", repr(e))
-
+    except Exception:
         raise HTTPException(
             status_code=401,
-            detail=f"JWT error: {str(e)}"
-        )
-
+            detail="Invalid or expired token"
+    )
     user = db.query(User).filter(
         User.id == user_id
     ).first()

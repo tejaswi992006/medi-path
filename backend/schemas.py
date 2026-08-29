@@ -116,7 +116,6 @@ class ReferralCreate(BaseModel):
     patient_id: int
     from_facility_id: int
     to_facility_id: int
-    referred_by: int
     reason: str | None = None
     status: str = "Pending"
     notes: str | None = None
