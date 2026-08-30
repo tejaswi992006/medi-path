@@ -1,9 +1,18 @@
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    Date,
+    DateTime,
+    ForeignKey,
+)
+
 from sqlalchemy.orm import relationship
+
 from datetime import datetime
 
 from database import Base
-
 
 class Role(Base):
     __tablename__ = "roles"

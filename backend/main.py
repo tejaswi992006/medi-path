@@ -23,6 +23,7 @@ app.include_router(appointments_router)
 app.include_router(referrals_router)
 app.include_router(follow_ups_router)
 app.include_router(auth_router)
+
 @app.get("/")
 def root():
     return {"message": "Medi-Path Backend is running!"}
