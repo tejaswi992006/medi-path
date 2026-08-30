@@ -1,5 +1,6 @@
 from datetime import date,datetime
 from pydantic import BaseModel
+from typing import Literal
 
 
 class PatientCreate(BaseModel):
@@ -120,6 +121,10 @@ class ReferralCreate(BaseModel):
     status: str = "Pending"
     notes: str | None = None
 
+class ReferralUpdate(BaseModel):
+    status: Literal["Pending", "Accepted", "Rejected"]
+    notes: str | None = None
+
 
 class ReferralResponse(BaseModel):
     id: int
@@ -131,6 +136,7 @@ class ReferralResponse(BaseModel):
     status: str
     referral_date: datetime
     notes: str | None = None
+
 
     class Config:
         from_attributes = True
