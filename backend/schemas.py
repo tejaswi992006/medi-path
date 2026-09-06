@@ -221,3 +221,9 @@ class SyncActionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class SyncPullResponse(BaseModel):
+    items: list[SyncActionResponse]
+    next_cursor: int
+    has_more: bool

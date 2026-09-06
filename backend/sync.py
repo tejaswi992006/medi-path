@@ -1,12 +1,17 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from database import SessionLocal
 from models import SyncAction, TriageAssessment, Patient, Facility, User
-from schemas import SyncPushRequest, SyncActionResponse, TriageAssessmentCreate
+from schemas import (
+    SyncPushRequest,
+    SyncActionResponse,
+    SyncPullResponse,
+    TriageAssessmentCreate,
+)
 from auth import get_current_user
 
 router = APIRouter(
@@ -127,3 +132,35 @@ def sync_push(
         if existing_sync:
             return existing_sync
         raise
+
+
+@router.get("/pull", response_model=SyncPullResponse)
+def sync_pull(
+    after_id: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query_results = (
+        db.query(SyncAction)
+        .filter(SyncAction.status == "PROCESSED")
+        .filter(SyncAction.id > after_id)
+        .order_by(SyncAction.id.asc())
+        .limit(limit + 1)
+        .all()
+    )
+
+    has_more = len(query_results) > limit
+    items = query_results[:limit]
+
+    if items:
+        next_cursor = items[-1].id
+    else:
+        next_cursor = after_id
+
+    return {
+        "items": items,
+        "next_cursor": next_cursor,
+        "has_more": has_more
+    }
+
