@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -247,3 +247,46 @@ class FollowUp(Base):
     patient = relationship("Patient")
     referral = relationship("Referral")
     doctor = relationship("User")
+
+
+class TriageAssessment(Base):
+    __tablename__ = "triage_assessments"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    patient_id = Column(
+        Integer,
+        ForeignKey("patients.id"),
+        nullable=False
+    )
+
+    facility_id = Column(
+        Integer,
+        ForeignKey("facilities.id"),
+        nullable=False
+    )
+
+    assessed_by = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False
+    )
+
+    chief_complaint = Column(String(255), nullable=False)
+    symptoms = Column(Text, nullable=True)
+    temperature = Column(Float, nullable=True)
+    heart_rate = Column(Integer, nullable=True)
+    respiratory_rate = Column(Integer, nullable=True)
+    spo2 = Column(Float, nullable=True)
+    blood_pressure = Column(String(50), nullable=True)
+    urgency_level = Column(String(50), nullable=False)
+    notes = Column(Text, nullable=True)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    patient = relationship("Patient")
+    facility = relationship("Facility")
+    assessor = relationship("User")

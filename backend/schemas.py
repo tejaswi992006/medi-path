@@ -161,3 +161,39 @@ class FollowUpResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Triage Assessment Schemas
+
+class TriageAssessmentCreate(BaseModel):
+    patient_id: int
+    facility_id: int
+    chief_complaint: str
+    symptoms: list[str] | None = None
+    temperature: float | None = None
+    heart_rate: int | None = None
+    respiratory_rate: int | None = None
+    spo2: float | None = None
+    blood_pressure: str | None = None
+    urgency_level: str
+    notes: str | None = None
+
+
+class TriageAssessmentResponse(BaseModel):
+    id: int
+    patient_id: int
+    facility_id: int
+    assessed_by: int
+    chief_complaint: str
+    symptoms: str | None = None
+    temperature: float | None = None
+    heart_rate: int | None = None
+    respiratory_rate: int | None = None
+    spo2: float | None = None
+    blood_pressure: str | None = None
+    urgency_level: str
+    notes: str | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
