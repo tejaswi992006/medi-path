@@ -9,6 +9,7 @@ from referrals import router as referrals_router
 from follow_ups import router as follow_ups_router
 from auth import router as auth_router
 from triage import router as triage_router
+from sync import router as sync_router
 
 app = FastAPI(
     title="Medi-Path API",
@@ -25,6 +26,7 @@ app.include_router(referrals_router)
 app.include_router(follow_ups_router)
 app.include_router(auth_router)
 app.include_router(triage_router)
+app.include_router(sync_router)
 
 @app.get("/")
 def root():

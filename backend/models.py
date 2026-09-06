@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Float, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
@@ -290,3 +290,41 @@ class TriageAssessment(Base):
     patient = relationship("Patient")
     facility = relationship("Facility")
     assessor = relationship("User")
+
+
+class SyncAction(Base):
+    __tablename__ = "sync_actions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    client_event_id = Column(
+        String(100),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    entity_type = Column(
+        String(50),
+        nullable=False,
+        index=True
+    )
+
+    entity_id = Column(Integer, nullable=True)
+    operation = Column(String(30), nullable=False)
+    payload = Column(JSON, nullable=False)
+
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+
+    processed_at = Column(DateTime, nullable=True)
+
+    status = Column(
+        String(30),
+        default="PENDING",
+        nullable=False,
+        index=True
+    )

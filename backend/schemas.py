@@ -197,3 +197,27 @@ class TriageAssessmentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Sync Schemas
+
+class SyncPushRequest(BaseModel):
+    client_event_id: str
+    entity_type: str
+    operation: str
+    payload: dict
+
+
+class SyncActionResponse(BaseModel):
+    id: int
+    client_event_id: str
+    entity_type: str
+    entity_id: int | None = None
+    operation: str
+    payload: dict
+    status: str
+    created_at: datetime
+    processed_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
