@@ -1,111 +1,431 @@
+@import "tailwindcss";
+
+/* =========================================================
+   MEDIPATH DESIGN SYSTEM
+   Teal + Mint + White Healthcare Theme
+========================================================= */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* Brand Colors */
+  --medipath-teal-900: #123c3a;
+  --medipath-teal-800: #134e4a;
+  --medipath-teal-700: #115e59;
+  --medipath-teal-600: #0f766e;
+  --medipath-teal-500: #14b8a6;
+  --medipath-teal-400: #2dd4bf;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Mint */
+  --medipath-mint-50: #f0fdfa;
+  --medipath-mint-100: #ccfbf1;
+  --medipath-mint-200: #99f6e4;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Backgrounds */
+  --medipath-background: #f5f9f8;
+  --medipath-surface: #ffffff;
+  --medipath-surface-soft: #f8fcfb;
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  /* Text */
+  --medipath-text-primary: #173330;
+  --medipath-text-secondary: #526b67;
+  --medipath-text-muted: #718783;
+
+  /* Borders */
+  --medipath-border: #dfeae7;
+  --medipath-border-light: #e9f1ef;
+
+  /* Status */
+  --medipath-success: #16a34a;
+  --medipath-success-light: #dcfce7;
+
+  --medipath-warning: #d97706;
+  --medipath-warning-light: #fff7ed;
+
+  --medipath-danger: #dc2626;
+  --medipath-danger-light: #fee2e2;
+
+  /* Shadows */
+  --medipath-shadow-sm:
+    0 2px 8px rgba(18, 60, 58, 0.05);
+
+  --medipath-shadow-md:
+    0 6px 18px rgba(18, 60, 58, 0.08);
+
+  --medipath-shadow-lg:
+    0 12px 30px rgba(18, 60, 58, 0.10);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+/* =========================================================
+   GLOBAL RESET
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  background: var(--medipath-background);
+  color: var(--medipath-text-primary);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+
+/* =========================================================
+   FORM ELEMENTS
+========================================================= */
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+button {
+  cursor: pointer;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
+button:disabled {
+  cursor: not-allowed;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
+input,
+select,
+textarea {
+  color: var(--medipath-text-primary);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #94a9a5;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+========================================================= */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(20, 184, 166, 0.35);
+  outline-offset: 2px;
+}
+
+
+/* =========================================================
+   TEXT SELECTION
+========================================================= */
+
+::selection {
+  background: var(--medipath-mint-200);
+  color: var(--medipath-teal-900);
+}
+
+
+/* =========================================================
+   SCROLLBAR
+========================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #edf5f3;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9bb8b3;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--medipath-teal-600);
+}
+
+
+/* =========================================================
+   MEDIPATH CARD
+========================================================= */
+
+.medipath-card {
+  background: var(--medipath-surface);
+  border: 1px solid var(--medipath-border);
+  border-radius: 16px;
+  box-shadow: var(--medipath-shadow-sm);
+
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.medipath-card:hover {
+  box-shadow: var(--medipath-shadow-md);
+}
+
+
+/* =========================================================
+   PRIMARY BUTTON
+========================================================= */
+
+.medipath-primary-button {
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: var(--medipath-teal-600);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  padding: 12px 20px;
+
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.medipath-primary-button:hover {
+  background: var(--medipath-teal-700);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(15, 118, 110, 0.20);
+}
+
+.medipath-primary-button:active {
+  transform: translateY(0);
+}
+
+
+/* =========================================================
+   TEAL / MINT BUTTON
+========================================================= */
+
+.medipath-sky-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  background: var(--medipath-teal-500);
+  color: #ffffff;
+
+  border: none;
+  border-radius: 10px;
+
+  padding: 12px 20px;
+
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.medipath-sky-button:hover {
+  background: var(--medipath-teal-600);
+  transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   STATUS BADGES
+========================================================= */
+
+.medipath-status-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  background: var(--medipath-warning-light);
+  color: var(--medipath-warning);
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.medipath-status-completed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  background: var(--medipath-success-light);
+  color: var(--medipath-success);
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.medipath-status-urgent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  background: var(--medipath-danger-light);
+  color: var(--medipath-danger);
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   BRAND UTILITY CLASSES
+========================================================= */
+
+.medipath-teal-text {
+  color: var(--medipath-teal-600);
+}
+
+.medipath-dark-teal {
+  color: var(--medipath-teal-900);
+}
+
+.medipath-mint-bg {
+  background: var(--medipath-mint-50);
+}
+
+.medipath-teal-bg {
+  background: var(--medipath-teal-600);
+}
+
+.medipath-sidebar {
+  background: var(--medipath-teal-900);
+}
+
+
+/* =========================================================
+   PAGE TRANSITION
+========================================================= */
+
+.medipath-page {
+  animation: medipathFadeIn 0.25s ease-out;
+}
+
+@keyframes medipathFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* =========================================================
+   LOADING ANIMATION
+========================================================= */
+
+.medipath-pulse {
+  animation: medipathPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes medipathPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+
+/* =========================================================
+   SMOOTH INTERACTIONS
+========================================================= */
+
+a {
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+
+  .medipath-card {
+    border-radius: 14px;
+  }
 }
