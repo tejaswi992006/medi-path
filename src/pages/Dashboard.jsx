@@ -5,31 +5,72 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
 import { getPatients } from "../services/patientApi";
+import { getFollowUps } from "../services/followupApi";
+import { getMedicalRecords } from "../services/medicalRecordApi";
 
 function Dashboard() {
   const [patients, setPatients] = useState([]);
+  const [followUps, setFollowUps] = useState([]);
+  const [medicalRecords, setMedicalRecords] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadPatients();
+    loadDashboardData();
   }, []);
 
-  const loadPatients = async () => {
-    const data = await getPatients();
-    setPatients(data);
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const [patientsData, followUpsData, medicalRecordsData] =
+        await Promise.all([
+          getPatients(),
+          getFollowUps(),
+          getMedicalRecords(),
+        ]);
+
+      setPatients(Array.isArray(patientsData) ? patientsData : []);
+      setFollowUps(Array.isArray(followUpsData) ? followUpsData : []);
+      setMedicalRecords(
+        Array.isArray(medicalRecordsData) ? medicalRecordsData : []
+      );
+    } catch (err) {
+      console.error("Dashboard loading error:", err);
+      setError("Unable to load dashboard data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const pendingFollowups = patients.filter(
-    (patient) => patient.followup?.status === "Pending"
-  ).length;
+  // -----------------------------------
+  // FOLLOW-UP COUNTS
+  // -----------------------------------
 
-  const completedFollowups = patients.filter(
-    (patient) => patient.followup?.status === "Completed"
-  ).length;
+  const pendingFollowups = followUps.filter((followUp) => {
+    const status = String(followUp.status || "").toLowerCase();
 
-  const totalVisits = patients.reduce(
-    (total, patient) => total + (patient.visits?.length || 0),
-    0
-  );
+    return status === "pending" || status === "scheduled";
+  }).length;
+
+  const completedFollowups = followUps.filter((followUp) => {
+    const status = String(followUp.status || "").toLowerCase();
+
+    return status === "completed";
+  }).length;
+
+  // -----------------------------------
+  // RECORDED VISITS
+  // -----------------------------------
+
+  // Each medical record represents a recorded patient visit.
+  const totalVisits = medicalRecords.length;
+
+  // -----------------------------------
+  // PERCENTAGES
+  // -----------------------------------
 
   const pendingPercentage = patients.length
     ? Math.round((pendingFollowups / patients.length) * 100)
@@ -93,6 +134,16 @@ function Dashboard() {
             </section>
 
             {/* =========================
+                ERROR
+            ========================== */}
+
+            {error && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            {/* =========================
                 STATISTICS
             ========================== */}
 
@@ -108,7 +159,7 @@ function Dashboard() {
                     </p>
 
                     <p className="text-3xl font-bold text-[#123c3a] mt-2">
-                      {patients.length}
+                      {loading ? "..." : patients.length}
                     </p>
 
                     <p className="text-xs text-green-600 mt-2 font-semibold">
@@ -132,7 +183,7 @@ function Dashboard() {
                     </p>
 
                     <p className="text-3xl font-bold text-[#123c3a] mt-2">
-                      {pendingFollowups}
+                      {loading ? "..." : pendingFollowups}
                     </p>
 
                     <p className="text-xs text-orange-600 mt-2 font-semibold">
@@ -146,7 +197,7 @@ function Dashboard() {
                 </div>
               </div>
 
-              {/* Visits */}
+              {/* Recorded Visits */}
 
               <div className="medipath-card p-5">
                 <div className="flex items-start justify-between">
@@ -156,7 +207,7 @@ function Dashboard() {
                     </p>
 
                     <p className="text-3xl font-bold text-[#123c3a] mt-2">
-                      {totalVisits}
+                      {loading ? "..." : totalVisits}
                     </p>
 
                     <p className="text-xs text-[#0f766e] mt-2 font-semibold">
@@ -180,7 +231,7 @@ function Dashboard() {
                     </p>
 
                     <p className="text-3xl font-bold text-[#123c3a] mt-2">
-                      {completedFollowups}
+                      {loading ? "..." : completedFollowups}
                     </p>
 
                     <p className="text-xs text-green-600 mt-2 font-semibold">
@@ -354,7 +405,8 @@ function Dashboard() {
 
                                 <p className="text-xs text-slate-500 mt-1">
                                   {patient.id} •{" "}
-                                  {patient.address || "Address not available"}
+                                  {patient.address ||
+                                    "Address not available"}
                                 </p>
                               </div>
                             </div>
@@ -411,7 +463,7 @@ function Dashboard() {
                     <div
                       className="bg-orange-400 h-2.5 rounded-full transition-all duration-500"
                       style={{
-                        width: `${pendingPercentage}%`,
+                        width: `${Math.min(pendingPercentage, 100)}%`,
                       }}
                     ></div>
                   </div>
@@ -438,7 +490,7 @@ function Dashboard() {
                     <div
                       className="bg-green-400 h-2.5 rounded-full transition-all duration-500"
                       style={{
-                        width: `${completedPercentage}%`,
+                        width: `${Math.min(completedPercentage, 100)}%`,
                       }}
                     ></div>
                   </div>
