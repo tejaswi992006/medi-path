@@ -160,6 +160,8 @@ class FollowUpResponse(BaseModel):
     tracking_stage: str
     notes: str | None = None
     created_at: datetime
+class FollowUpStageUpdate(BaseModel):
+    tracking_stage: str
 
     class Config:
         from_attributes = True

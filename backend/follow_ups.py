@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal
 from models import FollowUp, Patient, Referral, User
-from schemas import FollowUpCreate, FollowUpResponse
+from schemas import FollowUpCreate, FollowUpResponse, FollowUpStageUpdate
 from auth import get_current_user
 
 
@@ -102,7 +102,44 @@ def create_follow_up(
 
     return new_follow_up
 
+@router.patch("/{follow_up_id}/tracking-stage", response_model=FollowUpResponse)
+def update_tracking_stage(
+    follow_up_id: int,
+    stage_update: FollowUpStageUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    allowed_stages = [
+        "Referral Created",
+        "Referral Accepted",
+        "Appointment Scheduled",
+        "Consultation",
+        "Follow-up",
+        "Treatment Completed"
+    ]
 
+    if stage_update.tracking_stage not in allowed_stages:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tracking stage. Allowed stages: {allowed_stages}"
+        )
+
+    follow_up = db.query(FollowUp).filter(
+        FollowUp.id == follow_up_id
+    ).first()
+
+    if not follow_up:
+        raise HTTPException(
+            status_code=404,
+            detail="Follow-up not found"
+        )
+
+    follow_up.tracking_stage = stage_update.tracking_stage
+
+    db.commit()
+    db.refresh(follow_up)
+
+    return follow_up
 # GET ALL FOLLOW-UPS
 @router.get("/", response_model=list[FollowUpResponse])
 def get_follow_ups(
