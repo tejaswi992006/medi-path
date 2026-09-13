@@ -146,6 +146,7 @@ class FollowUpCreate(BaseModel):
     doctor_id: int
     follow_up_date: datetime
     status: str = "Scheduled"
+    tracking_stage: str = "Referral Created"
     notes: str | None = None
 
 
@@ -156,6 +157,7 @@ class FollowUpResponse(BaseModel):
     doctor_id: int
     follow_up_date: datetime
     status: str
+    tracking_stage: str
     notes: str | None = None
     created_at: datetime
 

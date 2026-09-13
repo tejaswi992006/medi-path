@@ -92,6 +92,7 @@ def create_follow_up(
         doctor_id=follow_up.doctor_id,
         follow_up_date=follow_up.follow_up_date,
         status=follow_up.status,
+        tracking_stage=follow_up.tracking_stage,
         notes=follow_up.notes
     )
 

@@ -245,6 +245,10 @@ class FollowUp(Base):
         default="Scheduled",
         nullable=False
     )
+    tracking_stage = Column(
+    String(50),
+    default="Referral Created",
+    nullable=False)
 
     notes = Column(Text)
 
