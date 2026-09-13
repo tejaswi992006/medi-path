@@ -5,6 +5,7 @@ import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
 import { getPatient } from "../services/patientApi";
+import { createTriage } from "../services/triageApi";
 
 function Triage() {
   const { id } = useParams();
@@ -12,6 +13,7 @@ function Triage() {
   const [patient, setPatient] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     fever: "No",
@@ -23,7 +25,17 @@ function Triage() {
   });
 
   useEffect(() => {
-    getPatient(id).then(setPatient);
+    const loadPatient = async () => {
+      try {
+        const data = await getPatient(id);
+        setPatient(data);
+      } catch (error) {
+        console.error("Failed to load patient:", error);
+        setPatient(null);
+      }
+    };
+
+    loadPatient();
   }, [id]);
 
   const handleChange = (e) => {
@@ -35,7 +47,7 @@ function Triage() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     let priority = "Routine";
@@ -52,12 +64,64 @@ function Triage() {
       message = "Further clinical assessment is recommended.";
     }
 
-    setResult({
-      priority,
-      message,
-    });
+    const symptoms = [];
 
-    setSubmitted(true);
+    if (formData.fever === "Yes") {
+      symptoms.push("Fever");
+    }
+
+    if (formData.breathingDifficulty === "Yes") {
+      symptoms.push("Breathing difficulty");
+    }
+
+    if (formData.chestPain === "Yes") {
+      symptoms.push("Chest pain");
+    }
+
+    if (formData.symptoms.trim()) {
+      symptoms.push(formData.symptoms.trim());
+    }
+
+    const chiefComplaint =
+      symptoms.length > 0
+        ? symptoms.join(", ")
+        : "General clinical assessment";
+
+    try {
+      setLoading(true);
+
+      const triageResponse = await createTriage({
+        patientId: patient.id,
+        chiefComplaint: chiefComplaint,
+        symptoms: symptoms,
+        temperature: formData.temperature,
+        heartRate: null,
+        respiratoryRate: null,
+        spo2: null,
+        bloodPressure: null,
+        urgencyLevel: priority,
+        notes: formData.duration
+          ? `Duration: ${formData.duration}`
+          : null,
+      });
+
+      setResult({
+        priority: triageResponse.urgency_level || priority,
+        message: message,
+      });
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Triage submission failed:", error);
+
+      alert(
+        error.response?.data?.detail ||
+          error.message ||
+          "Failed to submit triage assessment."
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!patient) {
@@ -133,7 +197,7 @@ function Triage() {
             <div className="bg-[#123c3a] text-white rounded-2xl p-5 mb-6 shadow-md">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-[#ccfbf1] text-[#0f766e] flex items-center justify-center text-xl font-bold">
-                  {patient.name.charAt(0).toUpperCase()}
+                  {patient.name?.charAt(0).toUpperCase()}
                 </div>
 
                 <div>
@@ -187,7 +251,7 @@ function Triage() {
                       </select>
                     </div>
 
-                    {/* Breathing */}
+                    {/* Breathing Difficulty */}
                     <div>
                       <label className="block text-sm font-semibold text-[#173330] mb-2">
                         Breathing Difficulty?
@@ -204,7 +268,7 @@ function Triage() {
                       </select>
                     </div>
 
-                    {/* Chest pain */}
+                    {/* Chest Pain */}
                     <div>
                       <label className="block text-sm font-semibold text-[#173330] mb-2">
                         Chest Pain?
@@ -254,7 +318,7 @@ function Triage() {
                       />
                     </div>
 
-                    {/* Symptoms */}
+                    {/* Other Symptoms */}
                     <div className="md:col-span-3">
                       <label className="block text-sm font-semibold text-[#173330] mb-2">
                         Other Symptoms
@@ -275,9 +339,12 @@ function Triage() {
                   <div className="flex justify-end mt-6">
                     <button
                       type="submit"
-                      className="medipath-primary-button"
+                      disabled={loading}
+                      className={`medipath-primary-button ${
+                        loading ? "opacity-60 cursor-not-allowed" : ""
+                      }`}
                     >
-                      🩺 Submit Triage
+                      {loading ? "Submitting..." : "🩺 Submit Triage"}
                     </button>
                   </div>
                 </div>
@@ -286,6 +353,7 @@ function Triage() {
               /* Result */
               <div className="space-y-6">
 
+                {/* Triage Result */}
                 <div className="medipath-card p-6">
                   <div className="flex items-center justify-between gap-4 mb-6">
                     <div>
@@ -318,7 +386,7 @@ function Triage() {
                   </div>
                 </div>
 
-                {/* Recorded information */}
+                {/* Recorded Information */}
                 <div className="medipath-card p-6">
                   <h3 className="text-lg font-bold text-[#123c3a] mb-5">
                     Recorded Information
@@ -326,40 +394,54 @@ function Triage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
+                    {/* Fever */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4">
                       <p className="text-xs text-slate-500">Fever</p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.fever}
                       </p>
                     </div>
 
+                    {/* Breathing */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4">
                       <p className="text-xs text-slate-500">
                         Breathing Difficulty
                       </p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.breathingDifficulty}
                       </p>
                     </div>
 
+                    {/* Chest Pain */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4">
-                      <p className="text-xs text-slate-500">Chest Pain</p>
+                      <p className="text-xs text-slate-500">
+                        Chest Pain
+                      </p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.chestPain}
                       </p>
                     </div>
 
+                    {/* Duration */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4">
-                      <p className="text-xs text-slate-500">Duration</p>
+                      <p className="text-xs text-slate-500">
+                        Duration
+                      </p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.duration || "Not provided"}
                       </p>
                     </div>
 
+                    {/* Temperature */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4">
                       <p className="text-xs text-slate-500">
                         Temperature
                       </p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.temperature
                           ? `${formData.temperature} °C`
@@ -367,10 +449,12 @@ function Triage() {
                       </p>
                     </div>
 
+                    {/* Other Symptoms */}
                     <div className="bg-[#f8fcfb] rounded-xl p-4 sm:col-span-2 lg:col-span-1">
                       <p className="text-xs text-slate-500">
                         Other Symptoms
                       </p>
+
                       <p className="font-semibold text-[#173330] mt-1">
                         {formData.symptoms || "None"}
                       </p>
@@ -381,7 +465,11 @@ function Triage() {
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-end">
                   <button
-                    onClick={() => setSubmitted(false)}
+                    type="button"
+                    onClick={() => {
+                      setSubmitted(false);
+                      setResult(null);
+                    }}
                     className="px-5 py-3 rounded-xl border border-[#dfeae7] bg-white text-[#0f766e] font-semibold hover:bg-[#f0fdfa] transition"
                   >
                     ✏️ Edit Triage

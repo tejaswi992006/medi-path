@@ -36,9 +36,8 @@ function Referral() {
     try {
       const result = await createReferral({
         patientId: id,
-        facility,
+        toFacilityId: facility,
         reason: reason.trim(),
-        date: new Date().toISOString().split("T")[0],
       });
 
       if (result && result.success) {
@@ -47,7 +46,21 @@ function Referral() {
         setError("Unable to create referral. Please try again.");
       }
     } catch (err) {
-      setError("Something went wrong while creating the referral.");
+      console.error("Referral error:", err);
+
+      if (err.response?.status === 403) {
+        setError(
+          "Only a doctor account can create referrals with the current backend."
+        );
+      } else if (err.response?.status === 404) {
+        setError("Patient or facility was not found.");
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(
+          "Unable to connect to the backend. Make sure the FastAPI server is running."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -131,24 +144,12 @@ function Referral() {
                         Select healthcare facility
                       </option>
 
-                      <option value="Primary Health Centre">
-                        Primary Health Centre
+                      <option value="1">
+                        Medi-Path Demo PHC
                       </option>
 
-                      <option value="Community Health Centre">
-                        Community Health Centre
-                      </option>
-
-                      <option value="District Hospital">
-                        District Hospital
-                      </option>
-
-                      <option value="Government Hospital">
-                        Government Hospital
-                      </option>
-
-                      <option value="Specialist Hospital">
-                        Specialist Hospital
+                      <option value="2">
+                        Medi-Path Demo District Hospital
                       </option>
                     </select>
                   </div>
@@ -194,7 +195,9 @@ function Referral() {
                       disabled={loading}
                       className="medipath-primary-button disabled:opacity-60"
                     >
-                      {loading ? "Submitting..." : "🏥 Submit Referral"}
+                      {loading
+                        ? "Submitting..."
+                        : "🏥 Submit Referral"}
                     </button>
 
                   </div>
@@ -218,7 +221,7 @@ function Referral() {
                   </h2>
 
                   <p className="text-slate-500 mt-2">
-                    The referral details have been recorded.
+                    The referral has been saved to the backend.
                   </p>
                 </div>
 
@@ -241,7 +244,9 @@ function Referral() {
                     </p>
 
                     <p className="font-semibold text-[#173330] mt-1">
-                      {facility}
+                      {facility === "1"
+                        ? "Medi-Path Demo PHC"
+                        : "Medi-Path Demo District Hospital"}
                     </p>
                   </div>
 

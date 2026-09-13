@@ -4,13 +4,16 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
-import { addPatient } from "../mock/mockData";
+import { registerPatient } from "../services/patientApi";
 
 function RegisterPatient() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
+    password: "",
+    date_of_birth: "",
     age: "",
     gender: "",
     phone: "",
@@ -21,6 +24,7 @@ function RegisterPatient() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [registeredPatient, setRegisteredPatient] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -33,12 +37,14 @@ function RegisterPatient() {
     setError("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     if (
       !formData.name.trim() ||
-      !formData.age ||
+      !formData.email.trim() ||
+      !formData.password ||
+      !formData.date_of_birth ||
       !formData.gender ||
       !formData.phone.trim() ||
       !formData.village.trim()
@@ -54,51 +60,71 @@ function RegisterPatient() {
       return;
     }
 
-    const newPatient = addPatient(formData);
+    if (formData.password.length < 6) {
+      setError("Password must contain at least 6 characters.");
+      setSuccess("");
+      return;
+    }
 
-    setRegisteredPatient(newPatient);
+    try {
+      setLoading(true);
+      setError("");
+      setSuccess("");
 
-    setSuccess("Patient registered successfully!");
+      const newPatient = await registerPatient(formData);
 
-    setError("");
+      setRegisteredPatient(newPatient);
+      setSuccess("Patient registered successfully!");
 
-    setFormData({
-      name: "",
-      age: "",
-      gender: "",
-      phone: "",
-      village: "",
-      medicalHistory: "",
-    });
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        date_of_birth: "",
+        age: "",
+        gender: "",
+        phone: "",
+        village: "",
+        medicalHistory: "",
+      });
+    } catch (err) {
+      console.error("Registration error:", err);
+
+      if (err.response?.status === 400) {
+        setError(
+          err.response?.data?.detail ||
+            "Unable to register this patient."
+        );
+      } else if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError(
+          "Unable to connect to the backend. Make sure the FastAPI server is running."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#f5f9f8]">
-
       <Navbar />
 
       <div className="flex">
-
         <Sidebar />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
-
           <div className="max-w-5xl mx-auto medipath-page">
 
-            {/* =========================
-                PAGE HEADER
-            ========================== */}
-
+            {/* PAGE HEADER */}
             <section className="mb-7">
-
               <div className="flex items-center gap-2 mb-2">
-
                 <span className="w-2 h-2 rounded-full bg-[#14b8a6]"></span>
 
                 <p className="text-[#0f766e] font-bold text-xs tracking-wider uppercase">
                   Patient Management
                 </p>
-
               </div>
 
               <h1 className="text-3xl sm:text-4xl font-bold text-[#123c3a] tracking-tight">
@@ -108,18 +134,11 @@ function RegisterPatient() {
               <p className="text-slate-500 mt-2">
                 Create a new patient record for the health worker.
               </p>
-
             </section>
 
-
-            {/* =========================
-                SUCCESS MESSAGE
-            ========================== */}
-
+            {/* SUCCESS MESSAGE */}
             {success && registeredPatient && (
-
               <div className="bg-green-50 border border-green-200 rounded-2xl p-5 mb-6 shadow-sm">
-
                 <div className="flex items-start gap-4">
 
                   <div className="w-11 h-11 shrink-0 rounded-xl bg-green-100 flex items-center justify-center text-xl">
@@ -127,7 +146,6 @@ function RegisterPatient() {
                   </div>
 
                   <div className="flex-1">
-
                     <h2 className="font-bold text-green-800">
                       {success}
                     </h2>
@@ -140,8 +158,7 @@ function RegisterPatient() {
                     </p>
 
                     <p className="text-green-700 text-sm mt-1">
-                      You can now search for this patient using
-                      their Patient ID or phone number.
+                      The patient has been saved to the backend.
                     </p>
 
                     <button
@@ -154,24 +171,15 @@ function RegisterPatient() {
                     >
                       View Patient Profile →
                     </button>
-
                   </div>
 
                 </div>
-
               </div>
-
             )}
 
-
-            {/* =========================
-                ERROR MESSAGE
-            ========================== */}
-
+            {/* ERROR MESSAGE */}
             {error && (
-
               <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 shadow-sm">
-
                 <div className="flex items-center gap-3">
 
                   <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center">
@@ -183,20 +191,13 @@ function RegisterPatient() {
                   </p>
 
                 </div>
-
               </div>
-
             )}
 
-
-            {/* =========================
-                FORM CARD
-            ========================== */}
-
+            {/* FORM CARD */}
             <div className="bg-white border border-[#dfeae7] rounded-2xl shadow-sm overflow-hidden">
 
-              {/* Form Header */}
-
+              {/* FORM HEADER */}
               <div className="px-6 sm:px-8 py-6 bg-[#f8fcfb] border-b border-[#e9f1ef]">
 
                 <div className="flex items-center gap-4">
@@ -206,7 +207,6 @@ function RegisterPatient() {
                   </div>
 
                   <div>
-
                     <h2 className="text-xl font-bold text-[#123c3a]">
                       Patient Information
                     </h2>
@@ -214,16 +214,12 @@ function RegisterPatient() {
                     <p className="text-sm text-slate-500 mt-1">
                       Fields marked with * are required.
                     </p>
-
                   </div>
 
                 </div>
-
               </div>
 
-
-              {/* Form */}
-
+              {/* FORM */}
               <form
                 onSubmit={handleSubmit}
                 className="p-6 sm:p-8"
@@ -231,13 +227,8 @@ function RegisterPatient() {
 
                 <div className="grid md:grid-cols-2 gap-6">
 
-
-                  {/* =====================
-                      NAME
-                  ====================== */}
-
+                  {/* NAME */}
                   <div>
-
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
                       Patient Name *
                     </label>
@@ -248,20 +239,61 @@ function RegisterPatient() {
                       value={formData.name}
                       onChange={handleChange}
                       placeholder="Enter full name"
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
                     />
-
                   </div>
 
-
-                  {/* =====================
-                      AGE
-                  ====================== */}
-
+                  {/* EMAIL */}
                   <div>
-
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
-                      Age *
+                      Email *
+                    </label>
+
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="patient@example.com"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                    />
+                  </div>
+
+                  {/* PASSWORD */}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#173330] mb-2">
+                      Password *
+                    </label>
+
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Minimum 6 characters"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                    />
+                  </div>
+
+                  {/* DATE OF BIRTH */}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#173330] mb-2">
+                      Date of Birth *
+                    </label>
+
+                    <input
+                      type="date"
+                      name="date_of_birth"
+                      value={formData.date_of_birth}
+                      onChange={handleChange}
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                    />
+                  </div>
+
+                  {/* AGE */}
+                  <div>
+                    <label className="block text-sm font-semibold text-[#173330] mb-2">
+                      Age
                     </label>
 
                     <input
@@ -272,18 +304,16 @@ function RegisterPatient() {
                       placeholder="Enter age"
                       min="1"
                       max="120"
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
                     />
 
+                    <p className="text-xs text-slate-400 mt-1">
+                      Age is currently for display only. The backend stores Date of Birth.
+                    </p>
                   </div>
 
-
-                  {/* =====================
-                      GENDER
-                  ====================== */}
-
+                  {/* GENDER */}
                   <div>
-
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
                       Gender *
                     </label>
@@ -292,9 +322,8 @@ function RegisterPatient() {
                       name="gender"
                       value={formData.gender}
                       onChange={handleChange}
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
                     >
-
                       <option value="">
                         Select gender
                       </option>
@@ -310,18 +339,11 @@ function RegisterPatient() {
                       <option value="Other">
                         Other
                       </option>
-
                     </select>
-
                   </div>
 
-
-                  {/* =====================
-                      PHONE
-                  ====================== */}
-
+                  {/* PHONE */}
                   <div>
-
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
                       Phone Number *
                     </label>
@@ -334,18 +356,12 @@ function RegisterPatient() {
                       placeholder="10-digit phone number"
                       maxLength="10"
                       inputMode="numeric"
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
                     />
-
                   </div>
 
-
-                  {/* =====================
-                      VILLAGE
-                  ====================== */}
-
+                  {/* VILLAGE */}
                   <div>
-
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
                       Village *
                     </label>
@@ -356,18 +372,16 @@ function RegisterPatient() {
                       value={formData.village}
                       onChange={handleChange}
                       placeholder="Enter village name"
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1]"
                     />
 
+                    <p className="text-xs text-slate-400 mt-1">
+                      Village is sent to the backend as the patient's address.
+                    </p>
                   </div>
 
-
-                  {/* =====================
-                      MEDICAL HISTORY
-                  ====================== */}
-
-                  <div>
-
+                  {/* MEDICAL HISTORY */}
+                  <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-[#173330] mb-2">
                       Basic Medical History
                     </label>
@@ -378,26 +392,29 @@ function RegisterPatient() {
                       onChange={handleChange}
                       placeholder="Enter basic medical history"
                       rows="4"
-                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 transition-all focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1] resize-none"
+                      className="w-full border border-[#cddbd8] rounded-xl px-4 py-3 bg-white text-[#173330] placeholder:text-slate-400 focus:border-[#14b8a6] focus:ring-4 focus:ring-[#ccfbf1] resize-none"
                     />
 
+                    <p className="text-xs text-slate-400 mt-1">
+                      This field is currently collected by the frontend but is not stored by the current Patient API.
+                    </p>
                   </div>
 
                 </div>
 
-
-                {/* =========================
-                    FORM ACTIONS
-                ========================== */}
-
+                {/* ACTIONS */}
                 <div className="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-[#e9f1ef]">
 
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 bg-[#0f766e] hover:bg-[#115e59] text-white px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md transition-all"
+                    disabled={loading}
+                    className="inline-flex items-center justify-center gap-2 bg-[#0f766e] hover:bg-[#115e59] disabled:opacity-60 text-white px-6 py-3 rounded-xl font-bold shadow-sm hover:shadow-md transition-all"
                   >
                     <span>✓</span>
-                    Register Patient
+
+                    {loading
+                      ? "Registering..."
+                      : "Register Patient"}
                   </button>
 
                   <button
@@ -411,14 +428,9 @@ function RegisterPatient() {
                 </div>
 
               </form>
-
             </div>
 
-
-            {/* =========================
-                DEMO INFORMATION
-            ========================== */}
-
+            {/* INFORMATION */}
             <section className="mt-6 bg-[#f0fdfa] border border-[#99f6e4] rounded-2xl p-5">
 
               <div className="flex items-start gap-3">
@@ -430,14 +442,12 @@ function RegisterPatient() {
                 <div>
 
                   <h3 className="font-bold text-[#123c3a]">
-                    Development Demo Mode
+                    Backend Connected
                   </h3>
 
                   <p className="text-sm text-[#0f766e] mt-1 leading-relaxed">
-                    This patient is currently stored using
-                    MediPath mock data. When Member 1's API
-                    is connected, this form will send the
-                    same information to the backend.
+                    This form now creates a User and Patient
+                    profile through the MediPath backend API.
                   </p>
 
                 </div>
@@ -447,11 +457,8 @@ function RegisterPatient() {
             </section>
 
           </div>
-
         </main>
-
       </div>
-
     </div>
   );
 }

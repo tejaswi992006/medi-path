@@ -1,74 +1,178 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+
 import {
-  getAllPatients,
-  getPatientById,
-  updateFollowup,
-} from "../mock/mockData";
+  getFollowUps,
+  createFollowUp,
+} from "../services/followupApi";
+
+import { getPatients, getPatient } from "../services/patientApi";
 
 function FollowUps() {
   const { id } = useParams();
 
+  const [followUps, setFollowUps] = useState([]);
   const [patients, setPatients] = useState([]);
   const [patient, setPatient] = useState(null);
-  const [message, setMessage] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const [form, setForm] = useState({
+    patientId: id || "",
+    followUpDate: "",
+    notes: "",
+  });
 
   useEffect(() => {
-    if (id) {
-      const result = getPatientById(id);
-      setPatient(result || null);
-    } else {
-      const allPatients = getAllPatients();
-
-      const followupPatients = allPatients.filter(
-        (item) => item.followup
-      );
-
-      setPatients(followupPatients);
-    }
+    loadData();
   }, [id]);
 
-  const handleComplete = (patientId) => {
-    const updatedPatient = updateFollowup(
-      patientId,
-      "Completed"
-    );
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-    if (updatedPatient) {
-      setMessage("Follow-up marked as completed.");
+      const followUpData = await getFollowUps();
+      setFollowUps(followUpData || []);
 
       if (id) {
-        setPatient({ ...updatedPatient });
+        const patientData = await getPatient(id);
+        setPatient(patientData || null);
+
+        setForm((previous) => ({
+          ...previous,
+          patientId: id,
+        }));
       } else {
-        setPatients([...getAllPatients()]);
+        const patientData = await getPatients();
+        setPatients(patientData || []);
       }
+    } catch (err) {
+      console.error("Follow-up loading error:", err);
+
+      setError(
+        err.response?.data?.detail ||
+          "Unable to load follow-ups. Make sure the FastAPI server is running."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --------------------------------
-  // Single Patient Follow-up
-  // --------------------------------
+  const handleChange = (e) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleCreateFollowUp = async (e) => {
+    e.preventDefault();
+
+    setError("");
+    setSuccess("");
+
+    if (!form.patientId) {
+      setError("Please select a patient.");
+      return;
+    }
+
+    if (!form.followUpDate) {
+      setError("Please select a follow-up date and time.");
+      return;
+    }
+
+    const doctorId = window.localStorage.getItem(
+      "medipath_user_id"
+    );
+
+    if (!doctorId) {
+      setError("Doctor login information was not found.");
+      return;
+    }
+
+    try {
+      setCreating(true);
+
+      const newFollowUp = await createFollowUp({
+        patientId: form.patientId,
+        doctorId: doctorId,
+        followUpDate: form.followUpDate,
+        status: "Scheduled",
+        notes: form.notes,
+      });
+
+      setFollowUps((previous) => [
+        ...previous,
+        newFollowUp,
+      ]);
+
+      setSuccess("Follow-up created successfully! ✅");
+
+      setForm((previous) => ({
+        ...previous,
+        followUpDate: "",
+        notes: "",
+      }));
+    } catch (err) {
+      console.error("Create follow-up error:", err);
+
+      setError(
+        err.response?.data?.detail ||
+          "Unable to create follow-up."
+      );
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f5f9f8]">
+        <Navbar />
+
+        <div className="flex">
+          <Sidebar />
+
+          <main className="flex-1 flex items-center justify-center p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏳</div>
+
+              <p className="text-slate-500 font-medium">
+                Loading follow-ups...
+              </p>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   if (id) {
     if (!patient) {
       return (
-        <div className="min-h-screen bg-slate-100">
+        <div className="min-h-screen bg-[#f5f9f8]">
           <Navbar />
 
           <div className="flex">
             <Sidebar />
 
             <main className="flex-1 flex items-center justify-center p-6">
-              <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
-                <h2 className="text-xl font-bold text-slate-800">
+              <div className="bg-white rounded-2xl shadow-sm border border-[#dfeae7] p-8 text-center">
+                <h2 className="text-xl font-bold text-[#123c3a]">
                   Patient not found
                 </h2>
 
                 <Link
                   to="/followups"
-                  className="inline-block mt-5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-semibold"
+                  className="inline-block mt-5 medipath-primary-button"
                 >
                   ← Back to Follow-ups
                 </Link>
@@ -79,64 +183,77 @@ function FollowUps() {
       );
     }
 
-    const followup = patient.followup || {};
+    const patientFollowUps = followUps.filter(
+      (item) =>
+        String(item.patient_id) === String(patient.id)
+    );
 
     return (
-      <div className="min-h-screen bg-slate-100">
+      <div className="min-h-screen bg-[#f5f9f8]">
         <Navbar />
 
         <div className="flex">
           <Sidebar />
 
-          <main className="flex-1 p-6">
-            <div className="max-w-3xl mx-auto">
+          <main className="flex-1 p-4 sm:p-6 lg:p-8">
+            <div className="max-w-4xl mx-auto medipath-page">
 
               <Link
                 to={`/patients/${patient.id}`}
-                className="text-blue-600 hover:text-blue-800 font-semibold"
+                className="text-[#0f766e] font-semibold"
               >
                 ← Back to Patient Profile
               </Link>
 
-              <h1 className="text-3xl font-bold text-slate-800 mt-4">
-                📅 Follow-up
-              </h1>
+              <div className="mt-4 mb-6">
+                <p className="text-sm font-semibold text-[#0f766e]">
+                  Patient Care
+                </p>
 
-              <p className="text-slate-500 mb-6">
-                Manage patient follow-up
-              </p>
+                <h1 className="text-3xl font-bold text-[#123c3a] mt-1">
+                  📅 Follow-up
+                </h1>
 
-              {message && (
-                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-4 mb-6">
-                  {message}
+                <p className="text-slate-500 mt-1">
+                  Schedule and view patient follow-up information.
+                </p>
+              </div>
+
+              {success && (
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl p-4 mb-6">
+                  {success}
                 </div>
               )}
 
-              <section className="bg-white rounded-xl border shadow-sm p-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 mb-6">
+                  {error}
+                </div>
+              )}
 
-                <h2 className="text-xl font-bold text-slate-800 mb-5">
+              <section className="medipath-card p-6 mb-6">
+                <h2 className="text-xl font-bold text-[#123c3a] mb-5">
                   Patient Information
                 </h2>
 
                 <div className="grid sm:grid-cols-2 gap-5">
-
                   <div>
                     <p className="text-sm text-slate-500">
                       Patient ID
                     </p>
 
-                    <p className="font-semibold mt-1">
+                    <p className="font-semibold text-[#173330] mt-1">
                       {patient.id}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-sm text-slate-500">
-                      Name
+                      User ID
                     </p>
 
-                    <p className="font-semibold mt-1">
-                      {patient.name}
+                    <p className="font-semibold text-[#173330] mt-1">
+                      {patient.user_id}
                     </p>
                   </div>
 
@@ -145,66 +262,158 @@ function FollowUps() {
                       Phone
                     </p>
 
-                    <p className="font-semibold mt-1">
-                      {patient.phone}
+                    <p className="font-semibold text-[#173330] mt-1">
+                      {patient.phone || "Not available"}
                     </p>
                   </div>
 
                   <div>
                     <p className="text-sm text-slate-500">
-                      Village
+                      Gender
                     </p>
 
-                    <p className="font-semibold mt-1">
-                      {patient.village}
+                    <p className="font-semibold text-[#173330] mt-1">
+                      {patient.gender || "Not available"}
                     </p>
                   </div>
-
                 </div>
+              </section>
 
-                <div className="border-t mt-6 pt-6">
+              <section className="medipath-card p-6 mb-6">
+                <h2 className="text-xl font-bold text-[#123c3a] mb-2">
+                  ➕ Schedule New Follow-up
+                </h2>
 
-                  <h3 className="font-bold text-lg text-slate-800 mb-4">
-                    Follow-up Details
-                  </h3>
+                <p className="text-slate-500 mb-5">
+                  Create a follow-up appointment for this patient.
+                </p>
 
-                  <div className="flex flex-wrap gap-4">
+                <form
+                  onSubmit={handleCreateFollowUp}
+                  className="space-y-5"
+                >
+                  <div>
+                    <label className="block text-sm font-semibold text-[#173330] mb-2">
+                      Follow-up Date & Time
+                    </label>
 
-                    <span
-                      className={`px-4 py-2 rounded-full font-semibold ${
-                        followup.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-orange-100 text-orange-700"
-                      }`}
-                    >
-                      {followup.status || "Pending"}
-                    </span>
-
-                    {followup.dueDate && (
-                      <span className="px-4 py-2 bg-slate-100 rounded-full">
-                        Due: {followup.dueDate}
-                      </span>
-                    )}
-
+                    <input
+                      type="datetime-local"
+                      name="followUpDate"
+                      value={form.followUpDate}
+                      onChange={handleChange}
+                      className="w-full border border-[#cfe0dc] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#0f766e]"
+                    />
                   </div>
 
-                </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#173330] mb-2">
+                      Notes
+                    </label>
 
-                {followup.status !== "Completed" && (
+                    <textarea
+                      name="notes"
+                      value={form.notes}
+                      onChange={handleChange}
+                      rows={4}
+                      placeholder="Enter follow-up notes..."
+                      className="w-full border border-[#cfe0dc] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#0f766e]"
+                    />
+                  </div>
+
                   <button
-                    onClick={() => handleComplete(patient.id)}
-                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
+                    type="submit"
+                    disabled={creating}
+                    className="medipath-primary-button disabled:opacity-50"
                   >
-                    ✓ Mark Follow-up as Completed
+                    {creating
+                      ? "Creating..."
+                      : "Create Follow-up"}
                   </button>
-                )}
+                </form>
+              </section>
 
-                {followup.status === "Completed" && (
-                  <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 text-green-700 font-semibold text-center">
-                    ✓ Follow-up completed successfully.
+              <section className="medipath-card p-6">
+                <h2 className="text-xl font-bold text-[#123c3a] mb-5">
+                  Follow-up Records
+                </h2>
+
+                {patientFollowUps.length === 0 ? (
+                  <div className="bg-[#f8fcfb] rounded-xl p-6 text-center">
+                    <p className="text-slate-500">
+                      No follow-up records found for this patient.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {patientFollowUps.map((followUp) => (
+                      <div
+                        key={followUp.id}
+                        className="border border-[#dfeae7] rounded-xl p-5"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-3">
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Follow-up ID
+                            </p>
+
+                            <p className="font-bold text-[#123c3a]">
+                              {followUp.id}
+                            </p>
+                          </div>
+
+                          <span className="inline-flex w-fit px-4 py-2 rounded-full font-semibold text-sm bg-orange-100 text-orange-700">
+                            {followUp.status}
+                          </span>
+                        </div>
+
+                        <div className="grid sm:grid-cols-2 gap-4 mt-5">
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Follow-up Date
+                            </p>
+
+                            <p className="font-semibold text-[#173330] mt-1">
+                              {new Date(
+                                followUp.follow_up_date
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Doctor ID
+                            </p>
+
+                            <p className="font-semibold text-[#173330] mt-1">
+                              {followUp.doctor_id}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Referral ID
+                            </p>
+
+                            <p className="font-semibold text-[#173330] mt-1">
+                              {followUp.referral_id ?? "None"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs text-slate-500">
+                              Notes
+                            </p>
+
+                            <p className="font-semibold text-[#173330] mt-1">
+                              {followUp.notes || "No notes"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-
               </section>
 
             </div>
@@ -214,120 +423,206 @@ function FollowUps() {
     );
   }
 
-  // --------------------------------
-  // All Follow-ups
-  // --------------------------------
-
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-[#f5f9f8]">
       <Navbar />
 
       <div className="flex">
         <Sidebar />
 
-        <main className="flex-1 p-6">
-          <div className="max-w-5xl mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-5xl mx-auto medipath-page">
 
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-slate-800">
+            <div className="mb-7">
+              <p className="text-sm font-semibold text-[#0f766e]">
+                Patient Care
+              </p>
+
+              <h1 className="text-3xl sm:text-4xl font-bold text-[#123c3a] mt-1">
                 📅 Follow-ups
               </h1>
 
-              <p className="text-slate-500 mt-1">
-                View and manage patient follow-ups.
+              <p className="text-slate-500 mt-2">
+                Schedule and view patient follow-up records.
               </p>
             </div>
 
-            {message && (
-              <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-4 mb-6">
-                {message}
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-700 rounded-xl p-4 mb-6">
+                {success}
               </div>
             )}
 
-            {patients.length === 0 ? (
-              <div className="bg-white rounded-xl border shadow-sm p-8 text-center">
-                <p className="text-slate-500">
-                  No follow-ups available.
-                </p>
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 mb-6">
+                {error}
               </div>
-            ) : (
-              <div className="grid gap-4">
+            )}
 
-                {patients.map((item) => {
-                  const followup = item.followup || {};
+            <section className="medipath-card p-6 mb-7">
+              <h2 className="text-xl font-bold text-[#123c3a] mb-2">
+                ➕ Schedule New Follow-up
+              </h2>
 
-                  return (
-                    <div
-                      key={item.id}
-                      className="bg-white rounded-xl border shadow-sm p-6"
-                    >
+              <p className="text-slate-500 mb-5">
+                Select a patient and schedule their next follow-up.
+              </p>
 
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <form
+                onSubmit={handleCreateFollowUp}
+                className="space-y-5"
+              >
+                <div>
+                  <label className="block text-sm font-semibold text-[#173330] mb-2">
+                    Patient
+                  </label>
 
-                        <div>
-                          <p className="text-sm text-blue-600 font-semibold">
-                            {item.id}
-                          </p>
+                  <select
+                    name="patientId"
+                    value={form.patientId}
+                    onChange={handleChange}
+                    className="w-full border border-[#cfe0dc] rounded-xl px-4 py-3 bg-white"
+                  >
+                    <option value="">
+                      Select a patient
+                    </option>
 
-                          <h2 className="text-xl font-bold text-slate-800">
-                            {item.name}
-                          </h2>
+                    {patients.map((item) => (
+                      <option
+                        key={item.id}
+                        value={item.id}
+                      >
+                        Patient #{item.id}
+                        {item.phone
+                          ? ` - ${item.phone}`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
+                <div>
+                  <label className="block text-sm font-semibold text-[#173330] mb-2">
+                    Follow-up Date & Time
+                  </label>
+
+                  <input
+                    type="datetime-local"
+                    name="followUpDate"
+                    value={form.followUpDate}
+                    onChange={handleChange}
+                    className="w-full border border-[#cfe0dc] rounded-xl px-4 py-3"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#173330] mb-2">
+                    Notes
+                  </label>
+
+                  <textarea
+                    name="notes"
+                    value={form.notes}
+                    onChange={handleChange}
+                    rows={4}
+                    placeholder="Enter follow-up notes..."
+                    className="w-full border border-[#cfe0dc] rounded-xl px-4 py-3"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="medipath-primary-button disabled:opacity-50"
+                >
+                  {creating
+                    ? "Creating..."
+                    : "Create Follow-up"}
+                </button>
+              </form>
+            </section>
+
+            <section className="space-y-4">
+              {followUps.map((followUp) => {
+                const relatedPatient = patients.find(
+                  (item) =>
+                    String(item.id) ===
+                    String(followUp.patient_id)
+                );
+
+                return (
+                  <div
+                    key={followUp.id}
+                    className="medipath-card p-6"
+                  >
+                    <div className="flex flex-col md:flex-row md:justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-[#0f766e] font-semibold">
+                          Patient ID: {followUp.patient_id}
+                        </p>
+
+                        <h2 className="text-xl font-bold text-[#123c3a] mt-1">
+                          {relatedPatient
+                            ? relatedPatient.name ||
+                              `Patient #${relatedPatient.id}`
+                            : `Patient #${followUp.patient_id}`}
+                        </h2>
+
+                        {relatedPatient?.phone && (
                           <p className="text-slate-500 mt-1">
-                            {item.village} • {item.phone}
+                            {relatedPatient.phone}
                           </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3">
-
-                          <span
-                            className={`px-4 py-2 rounded-full font-semibold ${
-                              followup.status === "Completed"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-orange-100 text-orange-700"
-                            }`}
-                          >
-                            {followup.status || "Pending"}
-                          </span>
-
-                          {followup.dueDate && (
-                            <span className="text-sm text-slate-500">
-                              Due: {followup.dueDate}
-                            </span>
-                          )}
-
-                        </div>
-
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-3 mt-5">
-
-                        <Link
-                          to={`/patients/${item.id}`}
-                          className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold"
-                        >
-                          View Patient
-                        </Link>
-
-                        {followup.status !== "Completed" && (
-                          <button
-                            onClick={() =>
-                              handleComplete(item.id)
-                            }
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
-                          >
-                            ✓ Complete Follow-up
-                          </button>
                         )}
-
                       </div>
 
+                      <span className="px-4 py-2 rounded-full font-semibold w-fit bg-orange-100 text-orange-700">
+                        {followUp.status}
+                      </span>
                     </div>
-                  );
-                })}
 
-              </div>
-            )}
+                    <div className="grid sm:grid-cols-2 gap-4 mt-5">
+                      <div className="bg-[#f8fcfb] rounded-xl p-4">
+                        <p className="text-xs text-slate-500">
+                          Follow-up Date
+                        </p>
+
+                        <p className="font-semibold text-[#173330] mt-1">
+                          {new Date(
+                            followUp.follow_up_date
+                          ).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="bg-[#f8fcfb] rounded-xl p-4">
+                        <p className="text-xs text-slate-500">
+                          Doctor ID
+                        </p>
+
+                        <p className="font-semibold text-[#173330] mt-1">
+                          {followUp.doctor_id}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-5">
+                      <Link
+                        to={`/patients/${followUp.patient_id}`}
+                        className="flex-1 text-center medipath-primary-button"
+                      >
+                        View Patient
+                      </Link>
+
+                      <Link
+                        to={`/patients/${followUp.patient_id}/followup`}
+                        className="flex-1 text-center px-5 py-3 rounded-xl border border-[#dfeae7] bg-white text-[#0f766e] font-semibold"
+                      >
+                        View Follow-up
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
 
           </div>
         </main>

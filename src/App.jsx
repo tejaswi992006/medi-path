@@ -5,9 +5,10 @@ import Dashboard from "./pages/Dashboard";
 import RegisterPatient from "./pages/RegisterPatient";
 import PatientSearch from "./pages/PatientSearch";
 import PatientProfile from "./pages/PatientProfile";
-import Triage from "./pages/Triage";
 import Referral from "./pages/Referral";
 import FollowUps from "./pages/FollowUps";
+import Appointments from "./pages/Appointments";
+import Triage from "./pages/Triage";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -16,10 +17,19 @@ function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Login */}
-        <Route path="/login" element={<Login />} />
+        {/* =========================
+            LOGIN
+        ========================== */}
 
-        {/* Dashboard */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        {/* =========================
+            DASHBOARD
+        ========================== */}
+
         <Route
           path="/dashboard"
           element={
@@ -29,7 +39,10 @@ function App() {
           }
         />
 
-        {/* Register Patient */}
+        {/* =========================
+            REGISTER PATIENT
+        ========================== */}
+
         <Route
           path="/patients/register"
           element={
@@ -39,7 +52,10 @@ function App() {
           }
         />
 
-        {/* Search Patient */}
+        {/* =========================
+            SEARCH PATIENT
+        ========================== */}
+
         <Route
           path="/patients/search"
           element={
@@ -49,7 +65,10 @@ function App() {
           }
         />
 
-        {/* Patient Profile */}
+        {/* =========================
+            PATIENT PROFILE
+        ========================== */}
+
         <Route
           path="/patients/:id"
           element={
@@ -59,47 +78,11 @@ function App() {
           }
         />
 
-        {/* Patient Triage */}
-        <Route
-          path="/patients/:id/triage"
-          element={
-            <ProtectedRoute>
-              <Triage />
-            </ProtectedRoute>
-          }
-        />
+        {/* =========================
+            TRIAGE MENU
+            Search for patient first
+        ========================== */}
 
-        {/* Patient Referral */}
-        <Route
-          path="/patients/:id/referral"
-          element={
-            <ProtectedRoute>
-              <Referral />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Patient Follow-up */}
-        <Route
-          path="/patients/:id/followup"
-          element={
-            <ProtectedRoute>
-              <FollowUps />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* All Follow-ups */}
-        <Route
-          path="/followups"
-          element={
-            <ProtectedRoute>
-              <FollowUps />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Temporary Triage menu route */}
         <Route
           path="/triage"
           element={
@@ -109,7 +92,76 @@ function App() {
           }
         />
 
-        {/* Temporary Referral menu route */}
+        {/* =========================
+            PATIENT TRIAGE
+        ========================== */}
+
+        <Route
+          path="/patients/:id/triage"
+          element={
+            <ProtectedRoute>
+              <Triage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            PATIENT REFERRAL
+        ========================== */}
+
+        <Route
+          path="/patients/:id/referral"
+          element={
+            <ProtectedRoute>
+              <Referral />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            PATIENT FOLLOW-UP
+        ========================== */}
+
+        <Route
+          path="/patients/:id/followup"
+          element={
+            <ProtectedRoute>
+              <FollowUps />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            ALL FOLLOW-UPS
+        ========================== */}
+
+        <Route
+          path="/followups"
+          element={
+            <ProtectedRoute>
+              <FollowUps />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            APPOINTMENTS
+        ========================== */}
+
+        <Route
+          path="/appointments"
+          element={
+            <ProtectedRoute>
+              <Appointments />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* =========================
+            REFERRAL MENU ENTRY
+            Search for patient first
+        ========================== */}
+
         <Route
           path="/referral"
           element={
@@ -119,10 +171,18 @@ function App() {
           }
         />
 
-        {/* Default */}
+        {/* =========================
+            DEFAULT
+        ========================== */}
+
         <Route
           path="*"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
         />
 
       </Routes>
